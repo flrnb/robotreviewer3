@@ -13,7 +13,7 @@ called by `celery -A ml_worker worker --loglevel=info`
 
 from celery import Celery, current_task
 from celery.contrib import rdb
-from celery.signals import worker_init
+from celery.signals import worker_init, celeryd_after_setup
 import json
 import logging, os
 
@@ -30,7 +30,7 @@ LOG_LEVEL = (logging.DEBUG if DEBUG_MODE else logging.INFO)
 NUM_WORDS_IN_ABSTRACT = 450
 import robotreviewer
 from robotreviewer import config
-logging.basicConfig(level=LOG_LEVEL, format='[%(levelname)s] %(name)s %(asctime)s: %(message)s', filename=robotreviewer.get_data(config.LOG))
+logging.basicConfig(level=LOG_LEVEL, format='[%(levelname)s] %(name)s %(asctime)s: %(message)s')#, filename=robotreviewer.get_data(config.LOG))
 log = logging.getLogger(__name__)
 
 log.info("RobotReviewer machine learning tasks starting")
@@ -97,25 +97,27 @@ c.execute('CREATE TABLE IF NOT EXISTS article(id INTEGER PRIMARY KEY, report_uui
 c.close()
 rr_sql_conn.commit()
 
-
-@worker_init.connect
+@celeryd_after_setup.connect
 def on_worker_init(**_):
+    log.info("Loading the robots...")
+
     global bots
     global friendly_bots
-    log.info("Loading the robots...")
 
     # pico span bot must be loaded first i have *no* idea why...
 
-    bots = {"pico_span_bot": PICOSpanRobot(),            
+    bots = {
+            #"pico_span_bot": PICOSpanRobot(),            
             "bias_bot": BiasRobot(top_k=3),
             "pico_bot": PICORobot(),
             "pubmed_bot": PubmedRobot(),
             # "ictrp_bot": ICTRPRobot(),
             "rct_bot": RCTRobot(),
-            #"pico_viz_bot": PICOVizRobot(),
+            #pico_viz_bot": PICOVizRobot(),
             "sample_size_bot":SampleSizeBot()}
 
-    friendly_bots = {"pico_span_bot": "Extracting PICO text from title/abstract",
+    friendly_bots = {
+                     #"pico_span_bot": "Extracting PICO text from title/abstract",
                      "bias_bot": "Assessing risks of bias",
                      "pico_bot": "Extracting PICO information from full text",
                      "rct_bot": "Assessing study design (is it an RCT?)",
@@ -172,7 +174,9 @@ def pdf_annotate(report_uuid):
         current_task.update_state(state='PROGRESS',meta={'process_percentage': 76, 'task': 'processing PDF {}'.format(filename)})
 
 
-        data = pdf_annotate_study(data, bot_names=["rct_bot", "pubmed_bot", "bias_bot", "pico_bot", "pico_span_bot", "sample_size_bot"])
+        data = pdf_annotate_study(data, bot_names=["rct_bot", "pubmed_bot", "bias_bot", "pico_bot", 
+        #"pico_span_bot", 
+        "sample_size_bot"])
 
 
         

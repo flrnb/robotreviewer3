@@ -93,7 +93,7 @@
       {% for study in articles %}
       <h3>{{ short_citation(study) }}</h3>
 
-      <table class="char-pico-table">
+      <!-- <table class="char-pico-table">
         <tr>
           <td>Participants</td>
           <td>{{study.get('pico_span', {}).get('population', [])|join(', ')}}</td>
@@ -108,7 +108,7 @@
           <td>Outcomes</td>
           <td>{{study.get('pico_span', {}).get('outcomes', [])|join(', ')}}</td>
         </tr>
-      </table>
+      </table> -->
 
       <table class="char-pico-table">
         {% for domain in study.get('pico_text', []) %}

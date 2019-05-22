@@ -48,7 +48,7 @@ class Grobid():
         self.devnull = open(os.devnull, 'wb')
         atexit.register(self.cleanup)
         log.info('Launching Grobid process... (from {0})'.format(config.GROBID_PATH))
-        self.connection = subprocess.Popen(['./gradlew', 'run'], cwd=config.GROBID_PATH, stdout=self.devnull, stderr=subprocess.STDOUT) # skip tests since they will not run properly from python subprocess
+        self.connection = subprocess.Popen(['gradlew', 'run'], cwd=config.GROBID_PATH, shell=True, stdout=self.devnull, stderr=subprocess.STDOUT) # skip tests since they will not run properly from python subprocess
 
     def connect(self, check_delay=2):
         connected = False

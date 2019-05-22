@@ -87,7 +87,8 @@ rr_sql_conn = sqlite3.connect(robotreviewer.get_data('uploaded_pdfs/uploaded_pdf
 ## note we are using static methods, so not instantiating the classes
 ######
 log.info("Loading the robots...")
-bots = {"pico_span_bot": PICOSpanRobot,
+bots = {
+        #"pico_span_bot": PICOSpanRobot,
         "bias_bot": BiasRobot,
         "pico_bot": PICORobot,
         "pubmed_bot": PubmedRobot,
@@ -141,10 +142,6 @@ def annotate_status(report_uuid):
     result = AsyncResult(report_uuid, app=celery_app)
     return json.dumps({"state": result.state, "meta": result.result})
 
-
-
-
-
 @app.errorhandler(413)
 def request_entity_too_large(error):
     ''' @TODO not sure if we want to return something else here? '''
@@ -183,14 +180,24 @@ def get_study_name(article):
 
 def produce_report(report_uuid, reportformat, download=False, PICO_vectors=False):
     c = rr_sql_conn.cursor()
-    articles, article_ids = [], []
+    articles_data = []
     error_messages = [] # accumulate any errors over articles
     for i, row in enumerate(c.execute("SELECT pdf_uuid, annotations FROM article WHERE report_uuid=?", (report_uuid,))):
         data = MultiDict()
         data.load_json(row[1])
-        articles.append(data)
-        article_ids.append(row[0])
+        articles_data.append((row[0], data))
+        
+    def get_author_year(art):
+        year = int(art['year'])
+        authors = art['authors']
+        if (len(authors) > 0):
+            return (authors[0]['lastname'], year)
+        else:
+            return ('', year)
 
+    sorted(articles_data, key=(lambda art: get_author_year(art[1])))
+
+    article_ids, articles = zip(*articles_data)
 
     if reportformat=='html' or reportformat=='doc':
         # embeddings only relatively meaningful; do not generate
